@@ -1,29 +1,16 @@
 
-require 'csvigo'
-local num2char = require 'num2char'
-local char2num = require 'char2num'
+require 'optim'
+--local model_utils = require 'model_utils'
+local DataSetLoader = require 'DataSetLoader'
 
 
+local opt = {
+	filename = 'data/qa.csv',
+	batchSize = 1000,
+}
 
-function char2tensor(s)
-	local t = torch.ByteTensor(#s)
-	for i=1, #s do
-		local num = char2num[s:sub(i, i)]
-		t[i] = tonumber(num)
-	end
-	return t
-end
+local loader = DataSetLoader.create(opt.filename, opt.batchSize)
+print(loader:nextBatch())
+print(loader:nextBatch())
+print(loader:nextBatch())
 
-function tensor2char(t)
-	local s = {}
-	for i=1, t:size(1) do
-		s[i] = num2char[t[i]]
-	end
-	return table.concat(s)
-end
-
-
-local csv = csvigo.load('data/qa.csv')
-s = csv.questions[1]
-t = char2tensor(s)
-print(tensor2char(t))
