@@ -8,15 +8,14 @@ require 'Embedding.lua'
 
 local opt = {
 	filename = 'data/qa.csv',
-	batchSize = 64,
+	batchSize = 32,
 	iterations = 10000,
-	embeddingSize = 64,
-	hiddenSize = 256,
+	hiddenSize = 512,
 	optimName = 'adam',
-	optimState = {learningRate = 1e-3},
-	seed = 123,
+	optimState = {learningRate = 1e-4, learningRateDecay=1e-2},
+	seed = 122,
 	saveEvery = 100,
-	saveFile = 'gru_model',
+	saveFile = 'saves/gru_model4',
 	printEvery = 1,
 }
 torch.manualSeed(opt.seed)
@@ -26,10 +25,10 @@ local alphabetSize = loader.getAlphabetSize()
 local x, y = loader:nextBatch()
 
 local protos = {}
-protos.embedX = Embedding(alphabetSize, opt.embeddingSize)
-protos.embedY = Embedding(alphabetSize, opt.embeddingSize)
-protos.encodeGRU = gru.GRU(opt.embeddingSize, opt.hiddenSize)
-protos.decodeGRU = gru.GRU(opt.embeddingSize, opt.hiddenSize)
+protos.embedX = Embedding(alphabetSize, opt.hiddenSize)
+protos.embedY = Embedding(alphabetSize, opt.hiddenSize)
+protos.encodeGRU = gru.GRU(opt.hiddenSize, opt.hiddenSize)
+protos.decodeGRU = gru.GRU(opt.hiddenSize, opt.hiddenSize)
 protos.softmax = nn.Sequential()
 	:add(nn.Linear(opt.hiddenSize, alphabetSize))
 	:add(nn.SoftMax())
@@ -44,7 +43,7 @@ params:uniform(-.08, .08)
 local clones = {}
 for name, proto in pairs(protos) do
 	print('cloning '..name..'...')
-	clones[name] = model_utils.clone_many_times(proto, 41) --sequences are clamped at maximal length 41
+	clones[name] = model_utils.clone_many_times(proto, 101) --sequences are clamped at maximal length 41
 end
 
 
@@ -60,18 +59,18 @@ function feval(new_params)
 	--forward pass
 
 	--encoding
-	local Tx = x:size(1)
+	local Tx = x:size(2)
 	local embeddingsX = {}
 	local hEncode = {[0] = torch.zeros(opt.batchSize, opt.hiddenSize)}
 	for t=1, Tx do
-		embeddingsX[t] = clones.embedX[t]:forward(x[{{}, t}])
+		embeddingsX[t] = clones.embedX[t]:forward(x[{{}, t}]:clone())
 		hEncode[t] = clones.encodeGRU[t]:forward{embeddingsX[t], hEncode[t-1]}
 	end
 
 	--decoding
-	local Ty = y:size(1)
+	local Ty = y:size(2)
 	local predictions = {}
-	local embeddingsY = {[0] = torch.zeros(opt.batchSize, opt.embeddingSize)}
+	local embeddingsY = {[0] = torch.zeros(opt.batchSize, opt.hiddenSize)}
 	local hDecode = {[0] = hEncode[Tx]:clone()}
 	local loss = 0
 	for t=1, Ty do
@@ -85,7 +84,7 @@ function feval(new_params)
 
 	--decoding
 	local dhDecode = {}
-	local dEmbeddingsY = {[Ty]=torch.zeros(opt.batchSize, opt.embeddingSize)}
+	local dEmbeddingsY = {[Ty]=torch.zeros(opt.batchSize, opt.hiddenSize)}
 	dhDecode[Ty] = torch.zeros(opt.batchSize, opt.hiddenSize)
 	for t=Ty, 1, -1 do
 		local dLdO = clones.criterion[t]:backward(predictions[t], y[{{}, t}])
@@ -121,10 +120,12 @@ for i = 1, opt.iterations do
 
 	--printing and evaluating
 	if i % opt.printEvery == 0 then
-        print(string.format("iteration %4d, loss = %6.8f, loss/seq_len = , gradnorm = %6.4e", i, loss[1], gradParams:norm()))
+        print(string.format("iteration %4d, loss = %6.8f, gradnorm = %6.4e", i, loss[1], gradParams:norm()))
+        print(opt.optimState)
 	end
 	if i % opt.saveEvery == 0 then
 		print('saving model...')
+		torch.save(opt.saveFile..'_opt.t7')
 		torch.save(opt.saveFile..'_epoch_'..i..'.t7', protos)
 	end
 end
