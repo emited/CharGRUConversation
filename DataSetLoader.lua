@@ -20,13 +20,19 @@ function DataSetLoader.create(filename, batchSize)
 end
 
 function DataSetLoader:load(filename)
+	print('loading data...')
 	self.data = csvigo.load({path=filename, verbose=false})
 	assert(#self.data.questions == #self.data.answers)
 	self.data.size = #self.data.questions
 	return self.data
 end
 
+function DataSetLoader.getAlphabetSize()
+	return #num2char+1 --add stop char
+end
+
 function DataSetLoader:createBatches(batchSize)
+	print('creating batches...')
 	local X, Y = {}, {}
 	local k = 1
 	for i=1, self.data.size, batchSize do
@@ -34,17 +40,19 @@ function DataSetLoader:createBatches(batchSize)
 		local qmax, amax = 0, 0
 		local q, a = {}, {}
 		for j=1, batchSize do
-			q[j] = self.string2tensor(self.data.questions[i])
-			a[j] = self.string2tensor(self.data.answers[i])
+			q[j] = self.string2tensor(self.data.questions[i+j+1])
+			a[j] = self.string2tensor(self.data.answers[i+j+1])
 			qmax = math.max(q[j]:size(1), qmax)
 			amax = math.max(a[j]:size(1), amax)
 		end
-		X[k] = torch.ByteTensor(batchSize, qmax)
-		Y[k] = torch.ByteTensor(batchSize, amax)
+		local stopChar = self.getAlphabetSize()
+		X[k] = torch.ByteTensor(batchSize, qmax+1):fill(stopChar) -- fill w/ stop char value
+		Y[k] = torch.ByteTensor(batchSize, amax+1):fill(stopChar) -- fill w/ stop char value
 		for j=1, batchSize do
 			X[k][j]:sub(1, q[j]:size(1)):copy(q[j])
 			Y[k][j]:sub(1, a[j]:size(1)):copy(a[j])
 		end
+		k = k + 1 
 	end
 	self.X = X
 	self.Y = Y
@@ -57,12 +65,11 @@ function DataSetLoader:nextBatch()
 end
 
 function DataSetLoader.string2tensor(s)
-	local t = torch.ByteTensor(#s+1)
+	local t = torch.ByteTensor(#s)
 	for i=1, #s do
 		local num = char2num[s:sub(i, i)]
 		t[i] = tonumber(num)
 	end
-	t[-1] = -1 --stop signal
 	return t
 end
 

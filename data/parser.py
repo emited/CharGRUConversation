@@ -56,6 +56,7 @@ def preprocess(s):
 	ns = ns.replace('\n', ' ')
 	ns = ns.replace('-', ' ')
 	ns = filter(lambda c: c in mapping.keys(), ns)
+	ns = ns[:100] #taking only 99 first characters
 	return ns
 
 def char2num(s):
@@ -63,7 +64,6 @@ def char2num(s):
 
 def num2char(n):
 	return ''.join(map(lambda c:inv_mapping[c], n))
-
 
 if __name__ == "__main__":
 	results = []
@@ -73,5 +73,5 @@ if __name__ == "__main__":
 		subs = pysrt.open(filename, encoding='utf-8')
 		text = [preprocess(s.text) for s in subs]
 		if len(text)%2==1: text.pop()
-		results += [(text[i], text[i+1]) for i in range(len(text)-1)]
+		results += [(text[i], text[i+1]) for i in range(len(text)-1) if len(text[i])>2 and len(text[i+1])>2]
 	pd.DataFrame(results).to_csv('question_answers.csv', header=['questions', 'answers'], index=False)
