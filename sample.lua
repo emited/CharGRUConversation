@@ -9,10 +9,10 @@ local char2num = require 'char2num'
 
 local opt = {
 	seed = 123,
-	model = 'saves/gru_model3_epoch_2300.t7',
+	model = 'saves/gru_model4_epoch_700.t7',
 	trainOpt = '',
-	text = 'hello how are you?',
-	sample = false,
+	text = 'how',
+	sample = true,
 }
 
 torch.manualSeed(opt.seed)
@@ -37,27 +37,25 @@ local hDecode = {[0]=hEncode[#hEncode]}
 local predictions = {}
 local probabilities = {}
 local charPredictions = {}
-local embeddingY = {[0]=torch.zeros(trainOpt.embeddingSize)}
+local embeddingY = {[0]=torch.zeros(trainOpt.hiddenSize)}
 for t = 1, 100 do
 	
-	--xlua.progress(t, 100)
+	xlua.progress(t, 100)
 	hDecode[t] = protos.decodeGRU:forward{embeddingY[t-1], hDecode[t-1]}
 	probabilities[t] = protos.softmax:forward(hDecode[t])
-	embeddingY[t] = probabilities[t]
-	print(embeddingY)
 
 	if opt.sample then
-		predictions[t] = torch.multinomial(probabilities[t]:view(1, -1))
+		predictions[t] = torch.multinomial(probabilities[t], 1):view(-1)
 	else --argmax
-		_, predictions[t] = probabilities[t]:view(1, -1):max(2)
+		_, predictions[t] = probabilities[t]:view(1, -1):max(2):view(-1)
 	end
-	--print(probabilities[1]:view(1, -1):max(2))
-	print(predictions[t][1][1])
-	print('ok')
-	print(num2char[27])
-	charPredictions[t] = num2char[predictions[t][1][1]]
-	print(charPredictions)
+	embeddingY[t] = protos.embedY:forward(predictions[t])
+	charPredictions[t] = num2char[predictions[t][1]]
+	if charPredictions[t] == nil then print('alert ! ');print(predictions[t]) ; break end
 end
+print(t)
+print(predictions)
+print(charPredictions)
 
-print('reply = ')
+--print('reply = ')
 print(table.concat(charPredictions))
