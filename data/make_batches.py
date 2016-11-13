@@ -19,8 +19,9 @@ def to_batch(df, batch_size=12):
 	df['alen'] = df.answers.apply(lambda x : len(x))
 	grps = df.groupby(['qlen', 'alen'])
 	index = grps.count().questions.index
+	nindex = index[grps.count().questions>=batch_size]
 	batches = []
-	for i in index:
+	for i in nindex:
 	    batches.append(chunks(grps.get_group(i)[['questions', 'answers']].values, batch_size))
 	nbatches = [bi for b in batches for bi in b] #flatten
 	nnbatches = [(i+1, bi[0], bi[1]) for i, b in enumerate(nbatches) for bi in b]
@@ -29,27 +30,25 @@ def to_batch(df, batch_size=12):
 if __name__ == "__main__":
 
 	opts, args = getopt.getopt(sys.argv[1:], 'i:o:b:')
+	keys = [o[0] for o in opts]
 	for o, a in opts:
-		if o == '-i': #input file
+		if '-i' in opts: #input file
 			input_file = a
-		else:
+		elif not '-i' in keys:
 			input_file = 'qa.csv'
 		if o == '-o': #output file
 			output_file = 	a
-			print('ok  ')
-			print(output_file)
-		else:
+		elif not '-o' in keys:
 			output_file = 'make_batches_out.csv'
 		if o == '-b': #batch size
-			batch_size = int(a)
-		else:
+			batch_size = a
+		elif not '-b' in keys:
 			batch_size = 12
 
-	print('loading csv...')
+	print('loading '+input_file+'...')
 	df = pd.read_csv(input_file)
-	print('converting to batches...')
-	ndf = to_batch(df, batch_size)
-	print('saving to csv...')
-	print(output_file	)
+	print('converting to batches with size '+str(batch_size)+'...')
+	ndf = to_batch(df, int(batch_size))
+	print('saving to '+output_file+'...')
 	ndf.to_csv(output_file, index=False)
 	print('done!')

@@ -7,7 +7,7 @@ require 'Embedding.lua'
 
 
 local opt = {
-	filename = 'data/qa_batches.csv',
+	filename = 'data/qa_batch.csv',
 	filetype = 'batch',
 	batchSize = 32,
 	iterations = 10000,
@@ -44,7 +44,7 @@ params:uniform(-.08, .08)
 local clones = {}
 for name, proto in pairs(protos) do
 	print('cloning '..name..'...')
-	clones[name] = model_utils.clone_many_times(proto, 101) --sequences are clamped at maximal length 41
+	clones[name] = model_utils.clone_many_times(proto, 101) --sequences are clamped at maximal length 101
 end
 
 
