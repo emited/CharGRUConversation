@@ -48,7 +48,6 @@ function DataSetLoader:loadBatchFile(filename)
 		q[#q+1] = self.string2tensor(self.data.questions[i])
 		a[#a+1] = self.string2tensor(self.data.answers[i])
 	end
-	print(X)
 	self.X = X
 	self.Y = Y
 	return self.X, self.Y
@@ -97,6 +96,8 @@ end
 function DataSetLoader:nextBatch()
 	self.currentBatch = (self.currentBatch % #self.X) + 1
 	self.evaluatedBatches = self.evaluatedBatches + 1
+	-- using random instead
+	self.currentBatch = torch.random(1, #self.X)
 	return self.X[self.currentBatch], self.Y[self.currentBatch]
 end
 

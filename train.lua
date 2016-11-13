@@ -9,14 +9,14 @@ require 'Embedding.lua'
 local opt = {
 	filename = 'data/qa_batch.csv',
 	filetype = 'batch',
-	batchSize = 32,
+	batchSize = 16,
 	iterations = 10000,
 	hiddenSize = 512,
 	optimName = 'adam',
-	optimState = {learningRate = 1e-4, learningRateDecay=1e-2},
+	optimState = {learningRate = 1e-3, learningRateDecay=1e-2},
 	seed = 122,
 	saveEvery = 100,
-	saveFile = 'saves/gru_model4',
+	saveFile = 'saves/gru_model5',
 	printEvery = 1,
 }
 torch.manualSeed(opt.seed)

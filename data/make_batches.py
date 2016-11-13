@@ -32,7 +32,7 @@ if __name__ == "__main__":
 	opts, args = getopt.getopt(sys.argv[1:], 'i:o:b:')
 	keys = [o[0] for o in opts]
 	for o, a in opts:
-		if '-i' in opts: #input file
+		if o == '-i': #input file
 			input_file = a
 		elif not '-i' in keys:
 			input_file = 'qa.csv'
