@@ -7,20 +7,55 @@ local DataSetLoader = {}
 DataSetLoader.__index = DataSetLoader
 
 
-function DataSetLoader.create(filename, batchSize)
+function DataSetLoader.create(filename, filetype, batchSize)
 	local self = {}
 	setmetatable(self, DataSetLoader)
 	self.filename = filename
-	self.batchSize = batchSize
-	self:load(filename)
-	self:createBatches(batchSize)
+	if filetype == 'batch' then
+		self:loadBatchFile(filename)
+	else
+		self.batchSize = batchSize
+		self:loadFile(filename)
+		self:createBatches(batchSize)
+	end
 	self.currentBatch = 0
 	self.evaluatedBatches = 0
 	return self
 end
 
-function DataSetLoader:load(filename)
-	print('loading data...')
+function DataSetLoader:loadBatchFile(filename)
+	print('loading batch data file...')
+	self.data = csvigo.load({path=filename, verbose=false, mode='tidy'})
+	print('preparing batches...')
+	self.data.size = #self.data.questions
+	local k = 1
+	local X, Y = {}, {}
+	local q, a = {}, {}
+	local stopChar = self.getAlphabetSize()
+	for i = 1, self.data.size do
+		if tonumber(self.data.nbatch[i]) > k then
+			local nQChars = q[1]:size(1)
+			local nAChars = a[1]:size(1)
+			X[k] = torch.Tensor(#q, nQChars+1):fill(stopChar)
+			Y[k] = torch.Tensor(#a, nAChars+1):fill(stopChar)
+			for j=1, #q do
+				X[k][j]:sub(1, nQChars):copy(q[j])
+				Y[k][j]:sub(1, nAChars):copy(a[j])
+			end
+			q, a = {}, {}
+			k = k + 1
+		end
+		q[#q+1] = self.string2tensor(self.data.questions[i])
+		a[#a+1] = self.string2tensor(self.data.answers[i])
+	end
+	print(X)
+	self.X = X
+	self.Y = Y
+	return self.X, self.Y
+end
+
+function DataSetLoader:loadFile(filename)
+	print('loading data file...')
 	self.data = csvigo.load({path=filename, verbose=false})
 	assert(#self.data.questions == #self.data.answers)
 	self.data.size = #self.data.questions
@@ -56,6 +91,7 @@ function DataSetLoader:createBatches(batchSize)
 	end
 	self.X = X
 	self.Y = Y
+	return self.X, self.Y
 end
 
 function DataSetLoader:nextBatch()

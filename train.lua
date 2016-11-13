@@ -7,7 +7,8 @@ require 'Embedding.lua'
 
 
 local opt = {
-	filename = 'data/qa.csv',
+	filename = 'data/qa_batches.csv',
+	filetype = 'batch',
 	batchSize = 32,
 	iterations = 10000,
 	hiddenSize = 512,
@@ -20,7 +21,7 @@ local opt = {
 }
 torch.manualSeed(opt.seed)
 
-local loader = DataSetLoader.create(opt.filename, opt.batchSize)
+local loader = DataSetLoader.create(opt.filename, opt.filetype, opt.batchSize)
 local alphabetSize = loader.getAlphabetSize()
 local x, y = loader:nextBatch()
 

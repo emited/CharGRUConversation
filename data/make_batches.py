@@ -11,7 +11,7 @@ e.g: for batch k of size n, len(quest[i])==len(quest[j]) forall i, j
 '''
 
 def chunks(l, n):
-    return [l[i:i+n] for i in xrange(0, len(l)-1, n)]
+    return [l[i:i+n] for i in xrange(0, len(l), n) if len(l[i:i+n])==n]
 
 
 def to_batch(df, batch_size=12):
@@ -24,7 +24,7 @@ def to_batch(df, batch_size=12):
 	    batches.append(chunks(grps.get_group(i)[['questions', 'answers']].values, batch_size))
 	nbatches = [bi for b in batches for bi in b] #flatten
 	nnbatches = [(i+1, bi[0], bi[1]) for i, b in enumerate(nbatches) for bi in b]
-	return pd.DataFrame(nnbatches)
+	return pd.DataFrame(nnbatches, columns=['nbatch', 'questions', 'answers'])
 
 if __name__ == "__main__":
 
@@ -35,11 +35,13 @@ if __name__ == "__main__":
 		else:
 			input_file = 'qa.csv'
 		if o == '-o': #output file
-			output_file = a
+			output_file = 	a
+			print('ok  ')
+			print(output_file)
 		else:
 			output_file = 'make_batches_out.csv'
 		if o == '-b': #batch size
-			batch_size = a
+			batch_size = int(a)
 		else:
 			batch_size = 12
 
@@ -48,5 +50,6 @@ if __name__ == "__main__":
 	print('converting to batches...')
 	ndf = to_batch(df, batch_size)
 	print('saving to csv...')
+	print(output_file	)
 	ndf.to_csv(output_file, index=False)
 	print('done!')
