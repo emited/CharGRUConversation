@@ -1,5 +1,7 @@
 
 require 'optim'
+require 'nn'
+require 'rnn'
 local gru = require 'gru'
 local model_utils = require 'model_utils'
 local DataSetLoader = require 'DataSetLoader'
@@ -12,26 +14,26 @@ local opt = {
 	batchSize = 16,
 	iterations = 10000,
 	hiddenSize = 512,
-	optimName = 'adam',
-	optimState = {learningRate = 1e-3, learningRateDecay=1e-2},
+	optimName = 'adagrad',
+	optimState = {learningRate = 1e-1, learningRateDecay=1e-4},
 	seed = 122,
 	saveEvery = 100,
-	saveFile = 'saves/gru_model5',
+	saveFile = 'saves/gru_model6',
 	printEvery = 1,
 }
 torch.manualSeed(opt.seed)
 
 local loader = DataSetLoader.create(opt.filename, opt.filetype, opt.batchSize)
-local alphabetSize = loader.getAlphabetSize()
+local vocabSize = loader.getVocabSize()
 local x, y = loader:nextBatch()
 
 local protos = {}
-protos.embedX = Embedding(alphabetSize, opt.hiddenSize)
-protos.embedY = Embedding(alphabetSize, opt.hiddenSize)
+protos.embedX = Embedding(vocabSize, opt.hiddenSize)
+protos.embedY = Embedding(vocabSize, opt.hiddenSize)
 protos.encodeGRU = gru.GRU(opt.hiddenSize, opt.hiddenSize)
 protos.decodeGRU = gru.GRU(opt.hiddenSize, opt.hiddenSize)
 protos.softmax = nn.Sequential()
-	:add(nn.Linear(opt.hiddenSize, alphabetSize))
+	:add(nn.Linear(opt.hiddenSize, vocabSize))
 	:add(nn.SoftMax())
 protos.criterion = nn.CrossEntropyCriterion()
 
@@ -121,8 +123,9 @@ for i = 1, opt.iterations do
 
 	--printing and evaluating
 	if i % opt.printEvery == 0 then
-        print(string.format("iteration %4d, loss = %6.8f, gradnorm = %6.4e", i, loss[1], gradParams:norm()))
-        print(opt.optimState)
+		print(string.format("iteration %4d, loss = %6.8f, gradnorm = %6.4e", i, loss[1], gradParams:norm()))
+		lossPlot[#lossPlot+1] = {i, }
+		gradNormPlot[#gradNormPlot+1] = {i, }
 	end
 	if i % opt.saveEvery == 0 then
 		print('saving model...')

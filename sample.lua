@@ -9,9 +9,9 @@ local char2num = require 'char2num'
 
 local opt = {
 	seed = 123,
-	model = 'saves/gru_model4_epoch_700.t7',
+	model = 'saves/gru_model4_epoch_300.t7',
 	trainOpt = '',
-	text = 'how',
+	text = 'no?',
 	sample = true,
 }
 
@@ -57,5 +57,5 @@ print(t)
 print(predictions)
 print(charPredictions)
 
---print('reply = ')
+print('reply = ')
 print(table.concat(charPredictions))

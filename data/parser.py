@@ -56,7 +56,8 @@ def preprocess(s):
 	ns = ns.replace('\n', ' ')
 	ns = ns.replace('-', ' ')
 	ns = filter(lambda c: c in mapping.keys(), ns)
-	ns = ns[:100] #taking only 99 first characters
+	#taking only 99 first characters and creating stop token
+	ns = ns[:99]+'&' # & is stop token
 	return ns
 
 def char2num(s):
